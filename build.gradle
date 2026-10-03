@@ -46,6 +46,10 @@ base {
 // Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+java {
+    withSourcesJar()
+}
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
@@ -205,6 +209,27 @@ def seedClientRun = tasks.register('seedClientRun') {
 
 tasks.matching { it.name == 'prepareClientRun' }.configureEach {
     dependsOn seedClientRun
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            // Only the jars: Pixelmon and minecraft-mcp are provided by the game and must not become POM dependencies
+            artifactId = mod_id
+            artifact jar
+            artifact sourcesJar
+        }
+    }
+    repositories {
+        maven {
+            name = 'EnvyWare'
+            url = 'https://maven.envyware.co.uk/releases'
+            credentials {
+                username = findProperty('envywareUsername')
+                password = findProperty('envywarePassword')
+            }
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
