@@ -1,8 +1,8 @@
 package com.envyware.pixelmonmcp.server;
 
-import com.envyware.pixelmonmcp.PixelmonMcpTools;
 import com.envyware.pixelmonmcp.PokemonSummaries;
 import com.envyware.pixelmonmcp.ToolArgs;
+import com.envyware.pixelmonmcp.Tools;
 import com.envyware.pixelmonmcp.Versions;
 import com.pixelmonmod.api.parsing.ParseAttempt;
 import com.pixelmonmod.api.pokemon.PokemonSpecification;
@@ -67,7 +67,7 @@ public final class ServerActions {
                 return Map.<String, Object>of("status", "no_player");
             }
             return action.apply(players.get(0));
-        }).get(PixelmonMcpTools.TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        }).get(Tools.TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     public static Map<String, Object> setParty(ServerPlayer player, List<String> specs, boolean heal) {
