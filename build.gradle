@@ -58,6 +58,11 @@ neoForge {
     runs {
         client {
             client()
+            gameDirectory = project.file('runs/client')
+
+            // minecraft-mcp in background mode: hidden window, no focus or mouse grab, fixed endpoint port
+            systemProperty 'minecraftMcp.background', 'true'
+            systemProperty 'minecraftMcp.port', '25599'
         }
 
         configureEach {
@@ -92,6 +97,12 @@ neoForge {
 // "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+
+    // The minecraft-mcp stdio bridge, copied to runs/mcp-bridge.jar for agents
+    mcpBridge {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 dependencies {
@@ -101,6 +112,8 @@ dependencies {
     // minecraft-mcp is provided by the game: compile against it, load it in the dev client, never bundle or publish it
     compileOnly("com.envyware.minecraftmcp:minecraft_mcp-neoforge:${minecraft_mcp_version}")
     localRuntime("com.envyware.minecraftmcp:minecraft_mcp-neoforge:${minecraft_mcp_version}")
+
+    mcpBridge("com.envyware.minecraftmcp:minecraft_mcp-bridge:${minecraft_mcp_version}")
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -128,6 +141,70 @@ tasks.withType(ProcessResources).configureEach {
     filesMatching(['META-INF/neoforge.mods.toml', 'com/envyware/pixelmonmcp/build.properties']) {
         expand replaceProperties
     }
+}
+
+// Seeds the client run's game directory for background mode and copies the bridge next to it.
+// Everything the task actions use is captured here, so they never touch `project` (configuration cache).
+def clientRunDir = neoForge.runs.client.gameDirectory.get().asFile
+def bridgeTarget = file('runs/mcp-bridge.jar')
+def bridgeFiles = configurations.mcpBridge
+
+def prepareMcpBridge = tasks.register('prepareMcpBridge') {
+    group = 'pixelmon mcp'
+    description = 'Copies the minecraft-mcp stdio bridge to runs/mcp-bridge.jar.'
+    inputs.files(bridgeFiles)
+    outputs.upToDateWhen { false }
+    doLast { task ->
+        def source = bridgeFiles.singleFile.toPath()
+        def target = bridgeTarget.toPath()
+        if (java.nio.file.Files.exists(target) && java.nio.file.Files.mismatch(source, target) == -1L) {
+            return
+        }
+        java.nio.file.Files.createDirectories(target.parent)
+        try {
+            java.nio.file.Files.copy(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } catch (java.nio.file.FileSystemException e) {
+            task.logger.warn("runs/mcp-bridge.jar is in use by a running bridge and was not updated: ${e.message}")
+        }
+    }
+}
+
+def seedClientRun = tasks.register('seedClientRun') {
+    group = 'pixelmon mcp'
+    description = 'Disables the early loading window and seeds options.txt for the background client run.'
+    dependsOn prepareMcpBridge
+    outputs.upToDateWhen { false }
+    doLast {
+        def utf8 = java.nio.charset.StandardCharsets.UTF_8
+        def fmlToml = new File(clientRunDir, 'config/fml.toml')
+        fmlToml.parentFile.mkdirs()
+        def text = fmlToml.exists() ? new String(java.nio.file.Files.readAllBytes(fmlToml.toPath()), utf8) : ''
+        if (!text.isEmpty() && text.charAt(0) == (char) 0xFEFF) {
+            text = text.substring(1)
+        }
+        if (text =~ /(?m)^earlyWindowControl\s*=/) {
+            text = text.replaceAll(/(?m)^earlyWindowControl\s*=.*$/, 'earlyWindowControl = false')
+        } else {
+            text = (text.isEmpty() || text.endsWith('\n') ? text : text + '\n') + 'earlyWindowControl = false\n'
+        }
+        java.nio.file.Files.write(fmlToml.toPath(), text.getBytes(utf8))
+
+        def options = new File(clientRunDir, 'options.txt')
+        if (!options.exists()) {
+            def lines = [
+                    'onboardAccessibility:false',
+                    'overrideWidth:1600',
+                    'overrideHeight:900',
+                    'guiScale:2',
+                    'maxFps:30'
+            ]
+            java.nio.file.Files.write(options.toPath(), (lines.join('\n') + '\n').getBytes(utf8))
+        }
+    }
+}
+
+tasks.matching { it.name == 'prepareClientRun' }.configureEach {
+    dependsOn seedClientRun
 }
 
 tasks.withType(JavaCompile).configureEach {
