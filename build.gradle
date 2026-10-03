@@ -1,3 +1,10 @@
+import org.slf4j.event.Level
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.FileSystemException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     id 'idea'
     id 'java-library'
@@ -6,11 +13,6 @@ plugins {
 }
 
 tasks.named('wrapper', Wrapper).configure {
-    // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
-    // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
-    // documentation attached on cursor hover of gradle classes and methods. However, this comes with increased
-    // file size for Gradle. If you do switch this to ALL, run the Gradle wrapper task twice afterwards.
-    // (Verify by checking gradle/wrapper/gradle-wrapper.properties to see if distributionUrl now points to `-all`)
     distributionType = Wrapper.DistributionType.BIN
 }
 
@@ -43,7 +45,6 @@ base {
     archivesName = mod_id
 }
 
-// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 java {
@@ -51,7 +52,6 @@ java {
 }
 
 neoForge {
-    // Specify the version of NeoForge to use.
     version = project.neo_version
 
     parchment {
@@ -64,45 +64,27 @@ neoForge {
             client()
             gameDirectory = project.file('runs/client')
 
-            // minecraft-mcp in background mode: hidden window, no focus or mouse grab, fixed endpoint port
             systemProperty 'minecraftMcp.background', 'true'
             systemProperty 'minecraftMcp.port', '25599'
         }
 
         configureEach {
-            // Recommended logging data for a userdev environment
-            // The markers can be added/remove as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
             systemProperty 'forge.logging.markers', 'REGISTRIES'
 
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            logLevel = org.slf4j.event.Level.DEBUG
+            logLevel = Level.DEBUG
         }
     }
 
     mods {
-        // define mod <-> source bindings
-        // these are used to tell the game which sources are for which mod
-        // mostly optional in a single mod project
-        // but multi mod projects should define one per mod
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
     }
 }
 
-// Sets up a dependency configuration called 'localRuntime'.
-// This configuration should be used instead of 'runtimeOnly' to declare
-// a dependency that will be present for runtime testing but that is
-// "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
 
-    // The minecraft-mcp stdio bridge, copied to runs/mcp-bridge.jar for agents
     mcpBridge {
         canBeConsumed = false
         transitive = false
@@ -113,15 +95,12 @@ dependencies {
     implementation("pixelmon:Pixelmon-${minecraft_version}-${pixelmon_version}-universal:${pixelmon_version}")
     interfaceInjectionData("pixelmon:Pixelmon-${minecraft_version}-${pixelmon_version}-universal-interfaceinjection:${pixelmon_version}@json")
 
-    // minecraft-mcp is provided by the game: compile against it, load it in the dev client, never bundle or publish it
     compileOnly("com.envyware.minecraftmcp:minecraft_mcp-neoforge:${minecraft_mcp_version}")
     localRuntime("com.envyware.minecraftmcp:minecraft_mcp-neoforge:${minecraft_mcp_version}")
 
     mcpBridge("com.envyware.minecraftmcp:minecraft_mcp-bridge:${minecraft_mcp_version}")
 }
 
-// This block of code expands all declared replace properties in the specified resource targets.
-// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
 tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [
             minecraft_version          : minecraft_version,
@@ -147,8 +126,6 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
-// Seeds the client run's game directory for background mode and copies the bridge next to it.
-// Everything the task actions use is captured here, so they never touch `project` (configuration cache).
 def clientRunDir = neoForge.runs.client.gameDirectory.get().asFile
 def bridgeTarget = file('runs/mcp-bridge.jar')
 def bridgeFiles = configurations.mcpBridge
@@ -161,13 +138,13 @@ def prepareMcpBridge = tasks.register('prepareMcpBridge') {
     doLast { task ->
         def source = bridgeFiles.singleFile.toPath()
         def target = bridgeTarget.toPath()
-        if (java.nio.file.Files.exists(target) && java.nio.file.Files.mismatch(source, target) == -1L) {
+        if (Files.exists(target) && Files.mismatch(source, target) == -1L) {
             return
         }
-        java.nio.file.Files.createDirectories(target.parent)
+        Files.createDirectories(target.parent)
         try {
-            java.nio.file.Files.copy(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        } catch (java.nio.file.FileSystemException e) {
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING)
+        } catch (FileSystemException e) {
             task.logger.warn("runs/mcp-bridge.jar is in use by a running bridge and was not updated: ${e.message}")
         }
     }
@@ -179,10 +156,10 @@ def seedClientRun = tasks.register('seedClientRun') {
     dependsOn prepareMcpBridge
     outputs.upToDateWhen { false }
     doLast {
-        def utf8 = java.nio.charset.StandardCharsets.UTF_8
+        def utf8 = StandardCharsets.UTF_8
         def fmlToml = new File(clientRunDir, 'config/fml.toml')
         fmlToml.parentFile.mkdirs()
-        def text = fmlToml.exists() ? new String(java.nio.file.Files.readAllBytes(fmlToml.toPath()), utf8) : ''
+        def text = fmlToml.exists() ? new String(Files.readAllBytes(fmlToml.toPath()), utf8) : ''
         if (!text.isEmpty() && text.charAt(0) == (char) 0xFEFF) {
             text = text.substring(1)
         }
@@ -191,7 +168,7 @@ def seedClientRun = tasks.register('seedClientRun') {
         } else {
             text = (text.isEmpty() || text.endsWith('\n') ? text : text + '\n') + 'earlyWindowControl = false\n'
         }
-        java.nio.file.Files.write(fmlToml.toPath(), text.getBytes(utf8))
+        Files.write(fmlToml.toPath(), text.getBytes(utf8))
 
         def options = new File(clientRunDir, 'options.txt')
         if (!options.exists()) {
@@ -202,7 +179,7 @@ def seedClientRun = tasks.register('seedClientRun') {
                     'guiScale:2',
                     'maxFps:30'
             ]
-            java.nio.file.Files.write(options.toPath(), (lines.join('\n') + '\n').getBytes(utf8))
+            Files.write(options.toPath(), (lines.join('\n') + '\n').getBytes(utf8))
         }
     }
 }
@@ -214,7 +191,6 @@ tasks.matching { it.name == 'prepareClientRun' }.configureEach {
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            // Only the jars: Pixelmon and minecraft-mcp are provided by the game and must not become POM dependencies
             artifactId = mod_id
             artifact jar
             artifact sourcesJar
@@ -233,10 +209,9 @@ publishing {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
 }
 
-// IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {
     module {
         downloadSources = true
