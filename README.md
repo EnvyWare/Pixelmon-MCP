@@ -1,159 +1,136 @@
-# Pixelmon MDK [![Discord](https://img.shields.io/discord/831966641586831431)](https://discord.gg/7vqgtrjDGw) [![GitHub](https://img.shields.io/github/license/Pixelmon-Development/API)](https://www.gnu.org/licenses/lgpl-3.0.html)
+# Pixelmon MCP
 
-This repository serves as an example for how to create a Pixelmon sidemod
-using Forge 1.20.2 and Pixelmon's 9.X.X API.
+A small client-side NeoForge 1.21.1 mod that adds Pixelmon tools to
+[minecraft-mcp](https://github.com/EnvyWare/minecraft-mcp), the mod that exposes a running Minecraft client to AI agents
+over MCP. With both installed, an agent can set up a party, start NPC, wild or horde battles, and compare what the battle
+UI shows with what the server knows, without scripting menus or NPC dialogue.
 
-If you have any unanswered questions after reading through this README then
-please join my Discord and ask your questions in the [developer channel](https://discord.gg/7vqgtrjDGw).
+The tools register through minecraft-mcp's [tool provider SPI](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/tool-provider-spi.md).
+Setup tools act on the integrated server, so they work in singleplayer only.
 
+## Requirements
 
-<!-- TOC -->
-* Pixelmon MDK
-  * [Getting Started](#getting-started)
-    * [Download](#download)
-    * [Clone](#clone)
-    * [Editting the MDK](#editing-the-mdk)
-    * [Testing](#testing)
-    * [Building](#building)
-    * [Updating Pixelmon](#updating-pixelmon)
-  * [FAQ](#faq)
-  * [Creating commands](#commands)
-  * [Listeners](#listeners)
-  * [EnvyAPI](#envyapi)
-<!-- TOC -->
+- Minecraft 1.21.1, NeoForge 21.1.200+
+- Pixelmon 9.4.x (built against 9.4.1)
+- minecraft-mcp 0.1.0-envy.2+ (`com.envyware.minecraftmcp:minecraft_mcp-neoforge` on `https://maven.envyware.co.uk/releases`)
 
-## Getting Started
-To get started first clone this repository, or download the contents, to a 
-folder where you want to work. 
+The mod is client-only and is meant for dev and test clients, not for players.
 
-### Download
-To download the repository click the green "Code" button and then press "Download ZIP".
-As seen below:
+## Using it in another project
 
-![img.png](img.png)
+Either drop both jars into the game directory's `mods/` folder, or add them as dev-only runtime dependencies so they
+load in your dev client but never end up in your published jar or POM. With ModDevGradle:
 
-### Cloning
-To clone the repository please follow the instructions [here](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository)
-under "Cloning an Existing Repository".
+```groovy
+repositories {
+    maven { url = 'https://maven.envyware.co.uk/releases' }
+}
 
-### Editing the MDK
-Once you have the decompressed files in your workspace open the folder using IntelliJ.
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
 
-Make sure to replace all "examplemod" references with the ID of your mod. When creating the mod ID please ensure
-that it is all lower case and only contains alphanumeric characters (otherwise Forge/Minecraft will refuse to load it)
-
-You should also change all "your.domain.path" references (and folder names) to the
-packaging of your choice. You should own the domain that you're using and if not
-a common practice is using `me.yournamehere.`.
-
-#### Testing
-If you want to run your mod in the Minecraft game without having to run a server then follow the steps below.
-
-1. Run the ForgeGradle task`genIntelliJRuns` 
-2. Go to the drop down in the top right of IntelliJ
-
-![](https://i.gyazo.com/cef9f240a40c04f0d7ed81e1b66f4a25.png)
-
-3. Click the runClient entry from the drop down
-4. Click the red bug on the right to run the game
-
-Once you've pressed the red button (to the right of the green triangle) it may take a couple
-of minutes before IntellIJ runs the Minecraft client. This is normal as it is downloading the Pixelmon client
-and checking all the files for Mojang mappings so that it can run in your development environment.
-
-After a couple of minutes you should find that your mod has loaded in a Minecraft client. You can now
-enter a single player world and interact with your mod as normal.
-
-
-#### Building
-Once you have edited the above you're ready to go! To then compile your mod
-you should use the `./gradlew build` command which will produce a JAR file
-in the `releases` folder with a version number appended to the end.
-
-Make sure to update your version number for each release you do!
-
-#### Updating Pixelmon
-If the version of Pixelmon available in this is out of date then make sure to follow these steps to update it to the latest.
-
-1. Find your way to the [build.gradle](build.gradle) file
-2. Once in that file look for the "dependencies" section. Which looks like this:
-![](https://i.gyazo.com/8243e355906e817a62347db6ef8ff712.png)
-3. Then replace the "9.2.1" with the current version of the mod (in both places!)
-
-## FAQ
-Frequently Asked Questions
-
-### Why do I want a version number at the end of the JAR name?
-This makes it easier for end users to determine which version of the 
-mod they are currently running. If you're looking for a jar without
-any version numbers look in the `build/libs/` directory
-
-### How do I run in debug
-I usually don't run my mods in the Forge `runClient` so unfortunately I
-am not much help in offering support there. When I am debugging/testing
-I usually add logger lines to determine what variables contain what values,
-or where the logic has reached at that point.
-
-If someone else can explain how to make runClient work with a sidemod I am
-more than happy to put the explanation above.
-
-## Commands
-To create commands using Mojang's Brigadier I recommend you read through
-their documentation [here](https://github.com/Mojang/brigadier/blob/master/README.md)
-
-I have my own API for commands. If you're looking for examples of how to 
-use that I'd suggest looking through the [bingo](https://github.com/EnvyWare/ReforgedBingo) sidemod I have made.
-
-There is now two examples of commands in the MDK 
-- https://github.com/EnvyWare/Pixelmon-MDK/blob/main/src/main/java/your/domain/path/command/ExampleCommand.java
-- https://github.com/EnvyWare/Pixelmon-MDK/blob/main/src/main/java/your/domain/path/command/MoreComplicatedCommand.java
-
-Both of these demonstrate how you can use Brigadier to create server side commands (all commands are server side in 1.20.2).
-The second example shows a more complicated example with arguments and also gives an example of how to use the PokemonSpecification (spec) system.
-
-## Configs
-To create configs I recommend using Pixelmon's internal config API, which is the same as the config API in the EnvyWare API.
-The config API is just a small wrapper around Sponge's Configurate, and allows for very easy config reloading and simple config
-design from a code perspective. 
-You can find an example of how to use it [here](https://github.com/EnvyWare/Pixelmon-MDK/blob/main/src/main/java/your/domain/path/config/ExampleConfig.java)
-
-## Listeners
-In the project you can find an example Pixelmon listener. However, below I'll
-include an example for TCG, Pixelmon and Forge.
-
-Mod class:
-```java
-@SubscribeEvent
-public static void onServerStarting(FMLServerStartingEvent event) {
-    GenericEventListener eventListener = new GenericEventListener();
-    MinecraftForge.EVENT_BUS.register(eventListener);
-    Pixelmon.EVENT_BUS.register(eventListener);
-    TCG.EVENT_BUS.register(eventListener);
+dependencies {
+    localRuntime 'com.envyware.minecraftmcp:minecraft_mcp-neoforge:0.1.0-envy.2'
+    localRuntime 'com.envyware.pixelmonmcp:pixelmon_mcp:1.0.0'
 }
 ```
 
-GenericEventListener class:
-```java
-public static class GenericEventListener {
-    
-    @SubscribeEvent
-    public void onPlayerLoggedIn(PlayerLoggedInEvent event) {
-        
+Run the client in minecraft-mcp's [background mode](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/headless.md#background-mode-windowsmacoslinux-desktop)
+(`-DminecraftMcp.background=true`, and `earlyWindowControl = false` in `config/fml.toml`) so it never takes over your
+screen.
+
+If Pixelmon's internals have drifted from 9.4.1 (for example in a Pixelmon dev workspace), a tool that hits a missing
+method or field returns `{"status": "unsupported", "tool": ..., "reason": ..., "pixelmonVersion": ...}` instead of
+failing. `pixelmon.mcp.info` reports the versions in play.
+
+## Connecting an agent
+
+Agents connect through the minecraft-mcp [stdio bridge](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/bridge.md),
+which stays up while the client is launched, stopped and relaunched. For Claude Code, `.mcp.json` at the project root:
+
+```json
+{
+  "mcpServers": {
+    "minecraft": {
+      "command": "java",
+      "args": ["-jar", "runs/mcp-bridge.jar", "--game-dir", "runs/client",
+               "--launch-command", "gradlew.bat runClient --no-daemon", "--launch-cwd", "."]
     }
-    
-    @SubscribeEvent
-    public void onTCGEvent(TCGEvent event) {
-        
-    }
-    
-    @SubscribeEvent
-    public void onEggHatch(EggHatchEvent.Pre event) {
-        
-    }
+  }
 }
 ```
 
-## EnvyAPI
+Keep `--no-daemon` in the launch command: `client.stop` kills the launched process tree, so a Gradle daemon started by
+the launch would be killed with it. On Linux and macOS use `./gradlew runClient --no-daemon`.
 
-If you're looking for an example of how to use my API please look at
-any of the sidemods on this GitHub organization.
+In this repository, `./gradlew prepareClientRun` (also run by `runClient`) copies the bridge to `runs/mcp-bridge.jar`,
+sets `earlyWindowControl = false` in `runs/client/config/fml.toml` and writes a 1600x900, GUI scale 2 `options.txt` if
+there is none. The `client` run starts in background mode with the endpoint on port 25599.
+
+## Workflow
+
+1. `client.launch`. It compiles first and takes a few minutes, so batch code changes before relaunching.
+2. `mc.world.join` with `{"name": "agent", "preset": "flat"}` creates or opens a flat creative world with cheats. It
+   returns immediately; poll `mc.client.state` until `inWorld` is true (about a minute for a new world). A fresh
+   player sees the starter picker first, which keeps `inWorld` false: see the gotchas.
+3. Set up state with `pixelmon.party.set` and `pixelmon.battle.start`, or chat commands through `mc.command.run`.
+4. Drive the UI with `mc.screen.state`, `mc.screen.widget.click`, `mc.screen.click.at` and `mc.keyboard.press`.
+5. Check with `pixelmon.*.state`, `mc.screenshot.take` (saved under `runs/client/screenshots/`) and `client.logs`.
+6. `client.stop` when done.
+
+`mc.window.show` makes the hidden window visible without taking focus; `mc.window.hide` hands it back to the agent.
+
+## Tools
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.mcp.info` | | Versions of Pixelmon MCP, the loaded Pixelmon and minecraft-mcp, and the versions Pixelmon MCP was compiled against |
+| `pixelmon.party.state` | | The party as the client sees it: species, form, level, HP, status, moves with PP, held item |
+| `pixelmon.party.set` | `pokemon` (1 to 6 Pokémon specs, e.g. `["charizard lvl:50", "lapras lvl:50"]`), `heal` (default `true`) | Replaces the party. Refused in battle. Also marks the starter as picked and closes the starter picker, which otherwise stalls battles for a fresh player |
+| `pixelmon.party.heal` | | Heals the party. Refused in battle |
+| `pixelmon.battle.start` | One of `npc` (NPC preset id, e.g. `pixelmon:battle/leader/gym/dragon_1`), `wild` (Pokémon spec) or `horde` (list of specs). `rules` (rule set id, default AG), `ai` (default `pixelmon:advanced`), `canMega`, `canDynamax`, `canTerastallize` (NPC only, default `true`), `seed` (wild only), `distance` (blocks, default 3) | Spawns the opponents in front of the player and requests the battle. Horde battles ignore `rules` and `distance` |
+| `pixelmon.battle.state` | | The client battle: mode, turn, weather, pending messages and tasks, and the Pokémon on display with the HP the UI shows |
+| `pixelmon.battle.server_state` | | The server battle: turn and each participant's active Pokémon with real HP |
+| `pixelmon.battle.end` | | Ends the battle and removes the opponents `pixelmon.battle.start` spawned |
+
+Pixelmon 9.4.1 has no Terastallization option for NPC battles: `canTerastallize` is accepted but ignored, and the
+result says so.
+
+## Driving the battle UI
+
+The battle screen draws its own controls, so `mc.screen.state` lists no widgets for it. Take a screenshot and click with
+`mc.screen.click.at` in GUI coordinates, which are screenshot pixels divided by the GUI scale. At 1600x900 and GUI scale
+2, the four move buttons of a single battle are centred around (486, 386), (640, 386), (486, 424) and (640, 424);
+they are already shown in `MAIN_MENU`, so one click picks a move.
+`pixelmon.battle.state` reports the current `mode` (`MAIN_MENU`, `CHOOSE_ATTACK`, `ENFORCED_SWITCH`, `WAITING`, ...);
+check it after each click instead of assuming the click landed. `turn` counts from 0, while the UI shows
+"Turn 1" for the first turn.
+
+## Gotchas
+
+- A fresh player gets Pixelmon's starter picker. While it is open, `mc.client.state` reports `inWorld: false` and
+  `rawInWorld: true`; poll for either, then call `pixelmon.party.set`, which closes the picker.
+- `pixelmon.battle.start` returns as soon as the battle is requested; NPC battles start about half a second later. Poll
+  `pixelmon.battle.state` until `battling` is true.
+- After `pixelmon.battle.end`, heal only once `pixelmon.battle.state` reports the battle is over. The end-of-battle
+  write-back runs later and would undo an earlier heal.
+- Comparing `pixelmon.battle.state` with `pixelmon.battle.server_state` shows client/server desyncs, such as HP that
+  never updates.
+- Rule sets that cap levels (arena presets cap the player at 25) apply to `pixelmon.battle.start` as they do in game.
+- The world is creative and peaceful. Use `mc.command.run` for anything else (`/gamemode survival`, `/time set day`).
+- Only stop clients you launched. A developer may be running their own Minecraft clients next to the agent's.
+
+## Building
+
+```bash
+./gradlew build                  # build/libs/pixelmon_mcp-<version>.jar
+./gradlew publishToMavenLocal    # com.envyware.pixelmonmcp:pixelmon_mcp:<version>
+./gradlew publish                # EnvyWare Maven, needs envywareUsername and envywarePassword
+```
+
+The published POM has no dependencies: Pixelmon and minecraft-mcp are provided by the game.
+
+## License
+
+MIT
