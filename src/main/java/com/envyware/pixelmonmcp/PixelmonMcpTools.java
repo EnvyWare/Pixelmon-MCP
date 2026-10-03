@@ -2,6 +2,7 @@ package com.envyware.pixelmonmcp;
 
 import com.envyware.pixelmonmcp.tools.BattleTools;
 import com.envyware.pixelmonmcp.tools.PartyTools;
+import com.envyware.pixelmonmcp.tools.StorageTools;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.tools.ToolProvider;
@@ -10,8 +11,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Pixelmon tools for agents driving a client through minecraft-mcp. Client tools read what the player sees; setup tools
- * act on the integrated server so agents can reach a test state without scripting menus and NPC dialogue.
+ * Pixelmon tools for agents driving a client through minecraft-mcp. Client tools read what the player sees and act
+ * through the same packets as the GUI; setup tools act on the integrated server so agents can reach a test state
+ * without scripting menus and NPC dialogue.
  */
 public class PixelmonMcpTools implements ToolProvider {
     @Override
@@ -21,6 +23,7 @@ public class PixelmonMcpTools implements ToolProvider {
                         + "MCP was compiled against",
                 args -> info()));
         PartyTools.register(registry, bridge);
+        StorageTools.register(registry);
         BattleTools.register(registry, bridge);
     }
 
