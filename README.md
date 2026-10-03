@@ -83,28 +83,89 @@ there is none. The `client` run starts in background mode with the endpoint on p
 
 ## Tools
 
+Pokémon are always given as Pokémon specs, the same format as Pixelmon commands (`"pikachu lvl:50 palette:shiny"`,
+`"charizard helditem:charizardite_x"`). Resource ids default to the `pixelmon` namespace.
+
+### General
+
 | Tool | Arguments | What it does |
 |---|---|---|
 | `pixelmon.mcp.info` | | Versions of Pixelmon MCP, the loaded Pixelmon and minecraft-mcp, and the versions Pixelmon MCP was compiled against |
-| `pixelmon.party.state` | | The party as the client sees it: species, form, level, HP, status, moves with PP, held item |
-| `pixelmon.party.set` | `pokemon` (1 to 6 Pokémon specs, e.g. `["charizard lvl:50", "lapras lvl:50"]`), `heal` (default `true`) | Replaces the party. Refused in battle. Also marks the starter as picked and closes the starter picker, which otherwise stalls battles for a fresh player |
+
+### Party
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.party.state` | | The party as the client sees it: species, form, level, HP, status, moves with PP, held item, whether each Pokémon is `out`, and the `selectedSlot` |
+| `pixelmon.party.set` | `pokemon` (1 to 6 specs, e.g. `["charizard lvl:50", "lapras lvl:50"]`), `heal` (default `true`) | Replaces the party. Refused in battle. Also marks the starter as picked and closes the starter picker, which otherwise stalls battles for a fresh player |
 | `pixelmon.party.heal` | | Heals the party. Refused in battle |
-| `pixelmon.battle.start` | One of `npc` (NPC preset id, e.g. `pixelmon:battle/leader/gym/dragon_1`), `wild` (Pokémon spec) or `horde` (list of specs). `rules` (rule set id, default AG), `ai` (default `pixelmon:advanced`), `canMega`, `canDynamax`, `canTerastallize` (NPC only, default `true`), `seed` (wild only), `distance` (blocks, default 3) | Spawns the opponents in front of the player and requests the battle. Horde battles ignore `rules` and `distance` |
+| `pixelmon.party.select` | `slot` (0-5) | Selects a party slot, like the up and down keys |
+| `pixelmon.party.send_out` | `slot` (default the selected slot) | Throws the Pokémon out, like the send-out key. It lands a moment later: poll `pixelmon.party.state` for `out: true` |
+| `pixelmon.party.retrieve` | `slot` (default every Pokémon that is out) | Recalls sent-out Pokémon |
+| `pixelmon.party.gimmicks.state` | | Which gimmicks are unlocked (`mega`, `dynamax`, `terastallize`), the equipped key item, the items that can be selected, Tera energy and charm states |
+| `pixelmon.party.gimmicks.unlock` | `mega`, `dynamax`, `terastallize` (`true` unlocks, `false` locks), `teraEnergy`, `infiniteTeraEnergy` | Unlocks or locks gimmicks. The first unlock equips a matching key item |
+| `pixelmon.party.gimmicks.select` | `item`: `BraceletORAS`, `BoostNecklace`, `MegaGlasses`, `MegaAnchor`, `MegaTiara`, `DynamaxBand`, `TeraOrb` or `None` | Equips a key item. Its gimmick must be unlocked. Mega Stones are held items: give them in the spec |
+| `pixelmon.party.charms.set` | `charms`: map of charm id to `ACTIVE`, `AVAILABLE` or `DISABLED`, e.g. `{"shiny": "ACTIVE"}` | Sets charm states (`shiny`, `oval`, `mark`, `catching`, `exp`) |
+
+### PC
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.pc.state` | `box` (default 0) | One box (page): name, wallpaper and Pokémon with their slots, plus the name and count of every box |
+| `pixelmon.pc.set` | `box`; `pokemon` (up to 30 specs, `null` or `""` for an empty slot) replaces the box, or `slot` with one `pokemon` spec (`null` clears it) sets one slot; `name` renames the box | Writes to the PC |
+
+### Pokédex
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.pokedex.state` | `pokemon` (specs to look up) or a page with `offset` (default 0) and `limit` (default 30, max 200); `dex` (default `national_dex`) | Seen and caught counts and percentages, and entries with status (`UNKNOWN`, `SEEN`, `CAUGHT`) and how often each was seen and caught |
+| `pixelmon.pokedex.set` | `pokemon` (specs) or `all: true`; `status` (`seen` or `caught`, default `caught`); `clear: true` | Registers entries. Pixelmon cannot remove single entries: `clear` wipes the whole Pokédex first |
+
+### Research
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.research.state` | `available` (`true` also lists every research id) | Active research with stage and objective progress, and completed research ids |
+| `pixelmon.research.set` | `action` (`start`, `discard`, `complete`, `complete_stage`, `claim` or `clear`); `id` (e.g. `pixelmon:battle/gym/fire_1`) or `uuid` of an active research | Changes research. `claim` runs the current stage's rewards |
+
+### Battles
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.battle.start` | One of `npc` (NPC preset id, e.g. `pixelmon:battle/leader/gym/dragon_1`), `wild` (spec) or `horde` (list of specs). `rules` (rule set id, default AG), `ai` (default `pixelmon:advanced`), `canMega`, `canDynamax`, `canTerastallize` (NPC only, default `true`), `seed` (wild only), `distance` (blocks, default 3) | Spawns the opponents in front of the player and requests the battle. Horde battles ignore `rules` and `distance` |
 | `pixelmon.battle.state` | | The client battle: mode, turn, weather, pending messages and tasks, and the Pokémon on display with the HP the UI shows |
 | `pixelmon.battle.server_state` | | The server battle: turn and each participant's active Pokémon with real HP |
 | `pixelmon.battle.end` | | Ends the battle and removes the opponents `pixelmon.battle.start` spawned |
+| `pixelmon.battle.options` | `refreshBag` | What the player can do now: `canAct` (or `blockedBy`), the choosing Pokémon and its moves, available gimmicks, `canSwitch`, `canFlee`, `canCatch`, the team and enemies with indices, bag items and pending prompts |
+| `pixelmon.battle.move` | `move` (slot 0-3, name or `struggle`); `target` (enemy index) or `allyTarget` (our-side index); `gimmick` (`mega`, `ultra_burst`, `dynamax`, `terastallize` or `zmove`) | Uses a move. Targets only matter for moves that need one in multi battles |
+| `pixelmon.battle.switch` | `pokemon` (team index, UUID or species) | Switches. Also answers forced switches after a faint, and Revival Blessing (pass the fainted Pokémon) |
+| `pixelmon.battle.item` | `item` (e.g. `pixelmon:potion`); `pokemon` (target, default the choosing Pokémon); `move` (slot, for Ethers) | Uses a bag item |
+| `pixelmon.battle.catch` | `ball` (default `pixelmon:poke_ball`) | Throws a ball at the last standing wild opponent |
+| `pixelmon.battle.run` | | Runs from a wild battle, or forfeits a trainer battle |
+| `pixelmon.battle.learn_move` | `replace` (slot 0-3 to forget, or -1 to skip) | Answers the next "learn a new move" prompt |
+| `pixelmon.battle.dismiss_level_ups` | | Dismisses level-up screens, which hold up the next turn |
 
-Pixelmon 9.4.1 has no Terastallization option for NPC battles: `canTerastallize` is accepted but ignored, and the
-result says so.
+Pixelmon 9.4.1 has no Terastallization option for NPC battles: `canTerastallize` on `pixelmon.battle.start` is accepted
+but ignored, and the result says so. The `terastallize` gimmick on `pixelmon.battle.move` works.
 
-## Driving the battle UI
+## Playing a battle
 
-The battle screen draws its own controls, so `mc.screen.state` lists no widgets for it. Take a screenshot and click with
-`mc.screen.click.at` in GUI coordinates, which are screenshot pixels divided by the GUI scale. At 1600x900 and GUI scale
-2, the four move buttons of a single battle are centred around (486, 386), (640, 386), (486, 424) and (640, 424);
-they are already shown in `MAIN_MENU`, so one click picks a move.
-`pixelmon.battle.state` reports the current `mode` (`MAIN_MENU`, `CHOOSE_ATTACK`, `ENFORCED_SWITCH`, `WAITING`, ...);
-check it after each click instead of assuming the click landed. `turn` counts from 0, while the UI shows
+The battle tools send the same packets as the battle screen and update its state the same way, so the UI and the server
+stay in step. A turn looks like this:
+
+1. Poll `pixelmon.battle.options` until `canAct` is true. Until then it reports `blockedBy`: messages still playing, an
+   animation, or the opponent choosing.
+2. Choose with `pixelmon.battle.move`, `switch`, `item`, `catch` or `run`. In doubles and triples each Pokémon chooses in
+   turn: the result has `sent: false` and the `next` Pokémon until the last choice sends them all.
+3. After a faint the mode is `ENFORCED_SWITCH`: answer with `pixelmon.battle.switch`.
+4. Compare `pixelmon.battle.state` with `pixelmon.battle.server_state` to check what the UI shows.
+
+The bag comes from the player's inventory (give items with `mc.command.run`, e.g. `/give @s pixelmon:potion 5`). If
+`pixelmon.battle.options` shows an empty bag, pass `refreshBag: true` and read it again.
+
+To drive the real UI instead, click with `mc.screen.click.at` in GUI coordinates, which are screenshot pixels divided by
+the GUI scale. At 1600x900 and GUI scale 2, the four move buttons of a single battle are centred around (486, 386),
+(640, 386), (486, 424) and (640, 424); they are already shown in `MAIN_MENU`. `turn` counts from 0, while the UI shows
 "Turn 1" for the first turn.
 
 ## Gotchas
@@ -119,6 +180,10 @@ check it after each click instead of assuming the click landed. `turn` counts fr
   never updates.
 - Rule sets that cap levels (arena presets cap the player at 25) apply to `pixelmon.battle.start` as they do in game.
 - The world is creative and peaceful. Use `mc.command.run` for anything else (`/gamemode survival`, `/time set day`).
+- `pixelmon.research.set` with `claim` runs the rewards, which can open a professor dialogue screen. A battle does not
+  start while another screen is open: check `mc.client.state` and close it with `mc.keyboard.press` `{"key": "escape"}`.
+- A sent-out Pokémon's ball flies where the player looks and can hit something in the way, such as another sent-out
+  Pokémon. Check `out` in `pixelmon.party.state` rather than assuming it landed.
 - Only stop clients you launched. A developer may be running their own Minecraft clients next to the agent's.
 
 ## Building
