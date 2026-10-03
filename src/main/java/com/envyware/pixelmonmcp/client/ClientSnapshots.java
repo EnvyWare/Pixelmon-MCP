@@ -28,6 +28,7 @@ public final class ClientSnapshots {
         Map<String, Object> result = new LinkedHashMap<>();
         PlayerPartyStorage party = ClientStorageManager.party();
         result.put("inWorld", Minecraft.getInstance().player != null);
+        result.put("selectedSlot", party == null ? null : party.getSelectedSlot());
         List<Map<String, Object>> slots = new ArrayList<>();
         if (party != null) {
             for (int slot = 0; slot < 6; slot++) {
@@ -39,6 +40,7 @@ public final class ClientSnapshots {
                 Map<String, Object> entry = new LinkedHashMap<>();
                 entry.put("slot", slot);
                 entry.putAll(PokemonSummaries.pokemon(pokemon));
+                entry.put("out", PartyControls.isOut(pokemon));
                 slots.add(entry);
             }
         }
