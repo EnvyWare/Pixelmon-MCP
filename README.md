@@ -3,7 +3,8 @@
 A small client-side NeoForge 1.21.1 mod that adds Pixelmon tools to
 [minecraft-mcp](https://github.com/EnvyWare/minecraft-mcp), the mod that exposes a running Minecraft client to AI agents
 over MCP. With both installed, an agent can set up a party, start NPC, wild or horde battles, and compare what the battle
-UI shows with what the server knows, without scripting menus or NPC dialogue.
+UI shows with what the server knows, without scripting menus or NPC dialogue. For videos, it can quiet a world, stage
+Pokémon and NPCs, and find things to film.
 
 The tools register through minecraft-mcp's [tool provider SPI](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/tool-provider-spi.md).
 Setup tools act on the integrated server, so they work in singleplayer only.
@@ -12,7 +13,7 @@ Setup tools act on the integrated server, so they work in singleplayer only.
 
 - Minecraft 1.21.1, NeoForge 21.1.200+
 - Pixelmon 9.4.x (built against 9.4.1)
-- minecraft-mcp 0.1.0-envy.2+ (`com.envyware.minecraftmcp:minecraft_mcp-neoforge` on `https://maven.envyware.co.uk/releases`)
+- minecraft-mcp 0.1.0-envy.3+ (`com.envyware.minecraftmcp:minecraft_mcp-neoforge` on `https://maven.envyware.co.uk/releases`)
 
 The mod is client-only and is meant for dev and test clients, not for players.
 
@@ -31,8 +32,8 @@ configurations {
 }
 
 dependencies {
-    localRuntime 'com.envyware.minecraftmcp:minecraft_mcp-neoforge:0.1.0-envy.2'
-    localRuntime 'com.envyware.pixelmonmcp:pixelmon_mcp:1.0.0'
+    localRuntime 'com.envyware.minecraftmcp:minecraft_mcp-neoforge:0.1.0-envy.3'
+    localRuntime 'com.envyware.pixelmonmcp:pixelmon_mcp:1.1.0'
 }
 ```
 
@@ -148,6 +149,36 @@ Pokémon are always given as Pokémon specs, the same format as Pixelmon command
 Pixelmon 9.4.1 has no Terastallization option for NPC battles: `canTerastallize` on `pixelmon.battle.start` is accepted
 but ignored, and the result says so. The `terastallize` gimmick on `pixelmon.battle.move` works.
 
+### Film
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.film.prepare` | `stopSpawning` (default `true`); `clear` (`pokemon`, `npcs`, `wormholes` or `all`, one or a list, default none); `radius` (blocks around the player for `clear`, default the whole level); `party` (1 to 6 specs); `heal` (default `true`) | Gets the world ready for filming at runtime, without editing configs or restarting. Sets the `pixelmonSpawning` gamerule to `false`, vetoes every spawn by Pixelmon's spawners (wild Pokémon, legendaries, wormholes and the NPCs that spawn around villages), and turns off legendary spawning and the legendary broadcast. Fishing, Headbutt, Rock Smash, Sweet Scent, curry and Pixelmon grass still work. `clear` removes wild Pokémon (not owned, not in battle), NPCs and wormholes. `party` works as in `pixelmon.party.set`. Reports what it `changed` and `removed`, and anything it could not change as `unsupported` |
+| `pixelmon.film.restore` | | Puts back what `pixelmon.film.prepare` changed: the gamerule, the spawner veto, the legendary settings and the party. Removed entities stay removed |
+
+### Staging
+
+Positions are `[x, y, z]`. With `origin` (`"spawn"`, `"player"` or `[x, y, z]`), `pos` and `lookAt` are relative to it.
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.stage.pokemon` | `pokemon` (spec); `pos` (default `distance` blocks in front of the player, on the ground); `distance` (default 4); `ground` (`true` moves `pos` to the surface); `yaw` (degrees) or `lookAt` (default the player); `origin`; `frozen` (default `true`); `animation` (e.g. `special`) | Spawns a Pokémon for a shot. Frozen means no AI, no gravity, no despawn and invulnerable, so it stays where it was put. Returns `id`, `uuid`, `pos`, `yaw` and `species` |
+| `pixelmon.stage.npc` | `npc` (NPC preset id, e.g. `pixelmon:battle/leader/gym/dragon_1`); `name`; `pos`, `distance`, `ground`, `yaw`, `lookAt`, `origin`, `frozen` as above | Spawns an NPC from a preset. Frozen NPCs are also made immovable. Returns `id`, `uuid`, `pos`, `yaw`, `npc` and `name` |
+| `pixelmon.stage.clear` | `uuid` (one or a list, default every staged entity) | Removes staged Pokémon and NPCs |
+
+Staged entities are kept by `pixelmon.film.prepare` clears.
+
+### Locate
+
+`mc.command.run` returns no command output, so these return positions as JSON. They take `pos` (default the player)
+and `origin` as the staging tools do; with an `origin`, results are relative to it too.
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.locate.pokemon` | `pos`, `origin`; `radius` (default 64); `limit` (default 10); `species` (one or a list); `wild` (`true` only wild, `false` only owned) | Loaded Pokémon, nearest first: `id`, `uuid`, `pos`, `distance`, `species`, `level`, and `form`, `shiny`, `owner`, `inBattle` and `staged` when they apply. `total` counts every match |
+| `pixelmon.locate.npcs` | `pos`, `origin`; `radius` (default 64); `limit` (default 10) | Loaded NPCs, nearest first: `id`, `uuid`, `pos`, `distance`, `name`, and `preset` and `staged` when they apply |
+| `pixelmon.locate.structure` | `structure` (ids, id prefixes such as `gyms` or `den`, or `#tags`, one or a list; the `pixelmon` namespace is the default); `list` (`true` only lists the matching ids); `pos`, `origin`; `radius` (blocks, default 1600); `limit` (default 5) | The nearest structure of each matching id within `radius`, nearest first: `structure`, `x`, `z` and `distance`. Uses the same search as `/locate`, so it also finds structures in chunks not generated yet. Without `structure` it lists Pixelmon's structure ids |
+
 ## Playing a battle
 
 The battle tools send the same packets as the battle screen and update its state the same way, so the UI and the server
@@ -168,6 +199,37 @@ the GUI scale. At 1600x900 and GUI scale 2, the four move buttons of a single ba
 (640, 386), (486, 424) and (640, 424); they are already shown in `MAIN_MENU`. `turn` counts from 0, while the UI shows
 "Turn 1" for the first turn.
 
+## Filming
+
+The film tools fit minecraft-mcp's [film tools](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/film-tools.md)
+(`mc.film.run`, `mc.camera.play`, `mc.hud.set`, in minecraft-mcp 0.1.0-envy.3 and later). A scene's `setup.steps` can
+call them:
+
+```json
+"setup": {
+  "world": {"name": "film_pixelmon", "seed": 424242},
+  "steps": [
+    {"tool": "pixelmon.film.prepare", "args": {"party": ["pikachu lvl:50"], "clear": "all", "radius": 160}},
+    {"tool": "pixelmon.stage.pokemon",
+     "args": {"pokemon": "charizard palette:shiny", "origin": "spawn", "pos": [4, 0, 6], "ground": true, "lookAt": [0, 2, 0]}},
+    {"tool": "pixelmon.stage.npc",
+     "args": {"npc": "pixelmon:battle/leader/gym/dragon_1", "origin": "spawn", "pos": [-3, 0, 6], "ground": true, "lookAt": [4, 0, 6]}}
+  ]
+}
+```
+
+- `"origin": "spawn"` on the staging tools matches a scene's `"origin": "spawn"`, so staged entities and camera paths
+  share coordinates.
+- Use a staged entity's `uuid` as a shot's `target` (`{"uuid": "..."}`) to orbit or follow it. Find other subjects with
+  `pixelmon.locate.pokemon`, `pixelmon.locate.npcs` and `pixelmon.locate.structure` (`"origin": "spawn"` gives
+  scene coordinates).
+- `mc.world.join` creates worlds without structures unless `structures: true`; `pixelmon.locate.structure` warns when
+  the world has none.
+- Hide the HUD with `mc.hud.set`; shots and recordings hide it by default. Pixelmon's party sidebar and other overlays
+  are hidden with it.
+- Call `pixelmon.film.restore` when done. The `pixelmonSpawning` gamerule is saved with the world, so a world left
+  while prepared keeps Pixelmon spawning off until a restore or `/gamerule pixelmonSpawning true`.
+
 ## Gotchas
 
 - A fresh player gets Pixelmon's starter picker. While it is open, `mc.client.state` reports `inWorld: false` and
@@ -184,6 +246,8 @@ the GUI scale. At 1600x900 and GUI scale 2, the four move buttons of a single ba
   start while another screen is open: check `mc.client.state` and close it with `mc.keyboard.press` `{"key": "escape"}`.
 - A sent-out Pokémon's ball flies where the player looks and can hit something in the way, such as another sent-out
   Pokémon. Check `out` in `pixelmon.party.state` rather than assuming it landed.
+- Pixelmon's client picks a Pokémon's animation from how it moves, so `animation` on `pixelmon.stage.pokemon` only
+  holds for `special` on a Pokémon standing on the ground. A frozen Pokémon placed in the air plays `fly`.
 - Only stop clients you launched. A developer may be running their own Minecraft clients next to the agent's.
 
 ## Building
