@@ -13,7 +13,7 @@ Setup tools act on the integrated server, so they work in singleplayer only.
 
 - Minecraft 1.21.1, NeoForge 21.1.200+
 - Pixelmon 9.4.x (built against 9.4.1)
-- minecraft-mcp 0.1.0-envy.2+ (`com.envyware.minecraftmcp:minecraft_mcp-neoforge` on `https://maven.envyware.co.uk/releases`)
+- minecraft-mcp 0.1.0-envy.3+ (`com.envyware.minecraftmcp:minecraft_mcp-neoforge` on `https://maven.envyware.co.uk/releases`)
 
 The mod is client-only and is meant for dev and test clients, not for players.
 
@@ -32,7 +32,7 @@ configurations {
 }
 
 dependencies {
-    localRuntime 'com.envyware.minecraftmcp:minecraft_mcp-neoforge:0.1.0-envy.2'
+    localRuntime 'com.envyware.minecraftmcp:minecraft_mcp-neoforge:0.1.0-envy.3'
     localRuntime 'com.envyware.pixelmonmcp:pixelmon_mcp:1.0.0'
 }
 ```
