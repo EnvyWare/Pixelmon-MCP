@@ -148,6 +148,13 @@ Pokémon are always given as Pokémon specs, the same format as Pixelmon command
 Pixelmon 9.4.1 has no Terastallization option for NPC battles: `canTerastallize` on `pixelmon.battle.start` is accepted
 but ignored, and the result says so. The `terastallize` gimmick on `pixelmon.battle.move` works.
 
+### Film
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.film.prepare` | `stopSpawning` (default `true`); `clear` (`pokemon`, `npcs`, `wormholes` or `all`, one or a list, default none); `radius` (blocks around the player for `clear`, default the whole level); `party` (1 to 6 specs); `heal` (default `true`) | Gets the world ready for filming at runtime, without editing configs or restarting. Sets the `pixelmonSpawning` gamerule to `false`, vetoes every spawn by Pixelmon's spawners (wild Pokémon, legendaries, wormholes and the NPCs that spawn around villages), and turns off legendary spawning and the legendary broadcast. Fishing, Headbutt, Rock Smash, Sweet Scent, curry and Pixelmon grass still work. `clear` removes wild Pokémon (not owned, not in battle), NPCs and wormholes. `party` works as in `pixelmon.party.set`. Reports what it `changed` and `removed`, and anything it could not change as `unsupported` |
+| `pixelmon.film.restore` | | Puts back what `pixelmon.film.prepare` changed: the gamerule, the spawner veto, the legendary settings and the party. Removed entities stay removed |
+
 ## Playing a battle
 
 The battle tools send the same packets as the battle screen and update its state the same way, so the UI and the server
@@ -167,6 +174,26 @@ To drive the real UI instead, click with `mc.screen.click.at` in GUI coordinates
 the GUI scale. At 1600x900 and GUI scale 2, the four move buttons of a single battle are centred around (486, 386),
 (640, 386), (486, 424) and (640, 424); they are already shown in `MAIN_MENU`. `turn` counts from 0, while the UI shows
 "Turn 1" for the first turn.
+
+## Filming
+
+The film tools fit minecraft-mcp's [film tools](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/film-tools.md)
+(`mc.film.run`, `mc.camera.play`, `mc.hud.set`, in minecraft-mcp 0.1.0-envy.3 and later). A scene's `setup.steps` can
+call them:
+
+```json
+"setup": {
+  "world": {"name": "film_pixelmon", "seed": 424242},
+  "steps": [
+    {"tool": "pixelmon.film.prepare", "args": {"party": ["pikachu lvl:50"], "clear": "all", "radius": 160}}
+  ]
+}
+```
+
+- Hide the HUD with `mc.hud.set`; shots and recordings hide it by default. Pixelmon's party sidebar and other overlays
+  are hidden with it.
+- Call `pixelmon.film.restore` when done. The `pixelmonSpawning` gamerule is saved with the world, so a world left
+  while prepared keeps Pixelmon spawning off until a restore or `/gamerule pixelmonSpawning true`.
 
 ## Gotchas
 

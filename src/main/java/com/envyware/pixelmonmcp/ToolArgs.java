@@ -77,6 +77,26 @@ public final class ToolArgs {
         return value == null ? fallback : value;
     }
 
+    public static Double number(Map<String, Object> args, String key) {
+        Object value = args.get(key);
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public static double number(Map<String, Object> args, String key, double fallback) {
+        Double value = number(args, key);
+        return value == null ? fallback : value;
+    }
+
     /**
      * Parses a resource id, defaulting to the {@code pixelmon} namespace.
      */

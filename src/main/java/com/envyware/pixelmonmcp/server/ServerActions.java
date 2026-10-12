@@ -51,6 +51,8 @@ import java.util.function.Function;
 public final class ServerActions {
     /** Entity tag marking opponents spawned by pixelmon.battle.start, removed again by pixelmon.battle.end. */
     public static final String SPAWNED_TAG = "pixelmon_agent_spawned";
+    /** Entity tag marking entities staged by pixelmon.stage.*, kept by pixelmon.film.prepare clears. */
+    public static final String STAGED_TAG = "pixelmon_mcp_staged";
 
     private ServerActions() {
     }
