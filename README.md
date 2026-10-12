@@ -33,7 +33,7 @@ configurations {
 
 dependencies {
     localRuntime 'com.envyware.minecraftmcp:minecraft_mcp-neoforge:0.1.0-envy.3'
-    localRuntime 'com.envyware.pixelmonmcp:pixelmon_mcp:1.0.0'
+    localRuntime 'com.envyware.pixelmonmcp:pixelmon_mcp:1.1.0'
 }
 ```
 
