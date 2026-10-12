@@ -58,6 +58,11 @@ public final class ServerActions {
     }
 
     public static Map<String, Object> onServer(Function<ServerPlayer, Map<String, Object>> action) throws Exception {
+        return onServer(action, Tools.TIMEOUT_SECONDS);
+    }
+
+    public static Map<String, Object> onServer(Function<ServerPlayer, Map<String, Object>> action, long timeoutSeconds)
+            throws Exception {
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         if (server == null) {
             return Map.of("status", "not_in_singleplayer");
@@ -69,7 +74,7 @@ public final class ServerActions {
                 return Map.<String, Object>of("status", "no_player");
             }
             return action.apply(players.get(0));
-        }).get(Tools.TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        }).get(timeoutSeconds, TimeUnit.SECONDS);
     }
 
     public static Map<String, Object> setParty(ServerPlayer player, List<String> specs, boolean heal) {

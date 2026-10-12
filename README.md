@@ -3,7 +3,8 @@
 A small client-side NeoForge 1.21.1 mod that adds Pixelmon tools to
 [minecraft-mcp](https://github.com/EnvyWare/minecraft-mcp), the mod that exposes a running Minecraft client to AI agents
 over MCP. With both installed, an agent can set up a party, start NPC, wild or horde battles, and compare what the battle
-UI shows with what the server knows, without scripting menus or NPC dialogue.
+UI shows with what the server knows, without scripting menus or NPC dialogue. For videos, it can quiet a world, stage
+Pokémon and NPCs, and find things to film.
 
 The tools register through minecraft-mcp's [tool provider SPI](https://github.com/EnvyWare/minecraft-mcp/blob/main/docs/tool-provider-spi.md).
 Setup tools act on the integrated server, so they work in singleplayer only.
@@ -167,6 +168,17 @@ Positions are `[x, y, z]`. With `origin` (`"spawn"`, `"player"` or `[x, y, z]`),
 
 Staged entities are kept by `pixelmon.film.prepare` clears.
 
+### Locate
+
+`mc.command.run` returns no command output, so these return positions as JSON. They take `pos` (default the player)
+and `origin` as the staging tools do; with an `origin`, results are relative to it too.
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.locate.pokemon` | `pos`, `origin`; `radius` (default 64); `limit` (default 10); `species` (one or a list); `wild` (`true` only wild, `false` only owned) | Loaded Pokémon, nearest first: `id`, `uuid`, `pos`, `distance`, `species`, `level`, and `form`, `shiny`, `owner`, `inBattle` and `staged` when they apply. `total` counts every match |
+| `pixelmon.locate.npcs` | `pos`, `origin`; `radius` (default 64); `limit` (default 10) | Loaded NPCs, nearest first: `id`, `uuid`, `pos`, `distance`, `name`, and `preset` and `staged` when they apply |
+| `pixelmon.locate.structure` | `structure` (ids, id prefixes such as `gyms` or `den`, or `#tags`, one or a list; the `pixelmon` namespace is the default); `list` (`true` only lists the matching ids); `pos`, `origin`; `radius` (blocks, default 1600); `limit` (default 5) | The nearest structure of each matching id within `radius`, nearest first: `structure`, `x`, `z` and `distance`. Uses the same search as `/locate`, so it also finds structures in chunks not generated yet. Without `structure` it lists Pixelmon's structure ids |
+
 ## Playing a battle
 
 The battle tools send the same packets as the battle screen and update its state the same way, so the UI and the server
@@ -208,7 +220,11 @@ call them:
 
 - `"origin": "spawn"` on the staging tools matches a scene's `"origin": "spawn"`, so staged entities and camera paths
   share coordinates.
-- Use a staged entity's `uuid` as a shot's `target` (`{"uuid": "..."}`) to orbit or follow it.
+- Use a staged entity's `uuid` as a shot's `target` (`{"uuid": "..."}`) to orbit or follow it. Find other subjects with
+  `pixelmon.locate.pokemon`, `pixelmon.locate.npcs` and `pixelmon.locate.structure` (`"origin": "spawn"` gives
+  scene coordinates).
+- `mc.world.join` creates worlds without structures unless `structures: true`; `pixelmon.locate.structure` warns when
+  the world has none.
 - Hide the HUD with `mc.hud.set`; shots and recordings hide it by default. Pixelmon's party sidebar and other overlays
   are hidden with it.
 - Call `pixelmon.film.restore` when done. The `pixelmonSpawning` gamerule is saved with the world, so a world left

@@ -2,6 +2,7 @@ package com.envyware.pixelmonmcp;
 
 import com.envyware.pixelmonmcp.tools.BattleTools;
 import com.envyware.pixelmonmcp.tools.FilmTools;
+import com.envyware.pixelmonmcp.tools.LocateTools;
 import com.envyware.pixelmonmcp.tools.PartyTools;
 import com.envyware.pixelmonmcp.tools.StorageTools;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
@@ -27,6 +28,7 @@ public class PixelmonMcpTools implements ToolProvider {
         StorageTools.register(registry);
         BattleTools.register(registry, bridge);
         FilmTools.register(registry, bridge);
+        LocateTools.register(registry);
     }
 
     private static Map<String, Object> info() {
