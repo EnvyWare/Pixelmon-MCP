@@ -98,6 +98,27 @@ public final class ToolArgs {
     }
 
     /**
+     * Reads a point given as {@code [x, y, z]} or {@code {"x": .., "y": .., "z": ..}}, or null if it is not one.
+     */
+    public static double[] point(Object value) {
+        if (value instanceof List<?> list && list.size() == 3) {
+            double[] point = new double[3];
+            for (int i = 0; i < 3; i++) {
+                if (!(list.get(i) instanceof Number number)) {
+                    return null;
+                }
+                point[i] = number.doubleValue();
+            }
+            return point;
+        }
+        if (value instanceof Map<?, ?> map && map.get("x") instanceof Number x && map.get("y") instanceof Number y
+                && map.get("z") instanceof Number z) {
+            return new double[]{x.doubleValue(), y.doubleValue(), z.doubleValue()};
+        }
+        return null;
+    }
+
+    /**
      * Parses a resource id, defaulting to the {@code pixelmon} namespace.
      */
     public static ResourceLocation id(String text) {

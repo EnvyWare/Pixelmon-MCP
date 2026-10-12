@@ -5,6 +5,7 @@ import com.envyware.pixelmonmcp.Tools;
 import com.envyware.pixelmonmcp.client.ClientSnapshots;
 import com.envyware.pixelmonmcp.server.FilmActions;
 import com.envyware.pixelmonmcp.server.ServerActions;
+import com.envyware.pixelmonmcp.server.StageActions;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 
@@ -37,5 +38,22 @@ public final class FilmTools {
                 "Undo pixelmon.film.prepare: spawning, legendary settings and the party go back to what they were. "
                         + "Removed entities stay removed",
                 args -> ServerActions.onServer(FilmActions::restore)));
+
+        registry.register(Tools.tool("pixelmon.stage.pokemon",
+                "Stage a Pokémon for a shot. Args: pokemon (spec); pos ([x, y, z], default distance blocks in front "
+                        + "of the player, on the ground); distance (default 4); ground (true moves pos to the "
+                        + "surface); yaw (degrees) or lookAt ([x, y, z], default the player); origin (\"spawn\", "
+                        + "\"player\" or [x, y, z]: pos and lookAt are relative to it); frozen (default true: no AI, "
+                        + "no gravity, no despawn, invulnerable); animation (e.g. special, fly). Returns id and uuid "
+                        + "for camera targets",
+                args -> ServerActions.onServer(player -> StageActions.stagePokemon(player, args))));
+        registry.register(Tools.tool("pixelmon.stage.npc",
+                "Stage an NPC for a shot. Args: npc (NPC preset id, e.g. pixelmon:battle/leader/gym/dragon_1); name; "
+                        + "pos, distance, ground, yaw, lookAt, origin and frozen as for pixelmon.stage.pokemon. "
+                        + "Returns id and uuid",
+                args -> ServerActions.onServer(player -> StageActions.stageNpc(player, args))));
+        registry.register(Tools.tool("pixelmon.stage.clear",
+                "Remove staged Pokémon and NPCs. Args: uuid (one or a list, default every staged entity)",
+                args -> ServerActions.onServer(player -> StageActions.clear(player, args))));
     }
 }

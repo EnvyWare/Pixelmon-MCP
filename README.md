@@ -155,6 +155,18 @@ but ignored, and the result says so. The `terastallize` gimmick on `pixelmon.bat
 | `pixelmon.film.prepare` | `stopSpawning` (default `true`); `clear` (`pokemon`, `npcs`, `wormholes` or `all`, one or a list, default none); `radius` (blocks around the player for `clear`, default the whole level); `party` (1 to 6 specs); `heal` (default `true`) | Gets the world ready for filming at runtime, without editing configs or restarting. Sets the `pixelmonSpawning` gamerule to `false`, vetoes every spawn by Pixelmon's spawners (wild Pokémon, legendaries, wormholes and the NPCs that spawn around villages), and turns off legendary spawning and the legendary broadcast. Fishing, Headbutt, Rock Smash, Sweet Scent, curry and Pixelmon grass still work. `clear` removes wild Pokémon (not owned, not in battle), NPCs and wormholes. `party` works as in `pixelmon.party.set`. Reports what it `changed` and `removed`, and anything it could not change as `unsupported` |
 | `pixelmon.film.restore` | | Puts back what `pixelmon.film.prepare` changed: the gamerule, the spawner veto, the legendary settings and the party. Removed entities stay removed |
 
+### Staging
+
+Positions are `[x, y, z]`. With `origin` (`"spawn"`, `"player"` or `[x, y, z]`), `pos` and `lookAt` are relative to it.
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `pixelmon.stage.pokemon` | `pokemon` (spec); `pos` (default `distance` blocks in front of the player, on the ground); `distance` (default 4); `ground` (`true` moves `pos` to the surface); `yaw` (degrees) or `lookAt` (default the player); `origin`; `frozen` (default `true`); `animation` (e.g. `special`) | Spawns a Pokémon for a shot. Frozen means no AI, no gravity, no despawn and invulnerable, so it stays where it was put. Returns `id`, `uuid`, `pos`, `yaw` and `species` |
+| `pixelmon.stage.npc` | `npc` (NPC preset id, e.g. `pixelmon:battle/leader/gym/dragon_1`); `name`; `pos`, `distance`, `ground`, `yaw`, `lookAt`, `origin`, `frozen` as above | Spawns an NPC from a preset. Frozen NPCs are also made immovable. Returns `id`, `uuid`, `pos`, `yaw`, `npc` and `name` |
+| `pixelmon.stage.clear` | `uuid` (one or a list, default every staged entity) | Removes staged Pokémon and NPCs |
+
+Staged entities are kept by `pixelmon.film.prepare` clears.
+
 ## Playing a battle
 
 The battle tools send the same packets as the battle screen and update its state the same way, so the UI and the server
@@ -185,11 +197,18 @@ call them:
 "setup": {
   "world": {"name": "film_pixelmon", "seed": 424242},
   "steps": [
-    {"tool": "pixelmon.film.prepare", "args": {"party": ["pikachu lvl:50"], "clear": "all", "radius": 160}}
+    {"tool": "pixelmon.film.prepare", "args": {"party": ["pikachu lvl:50"], "clear": "all", "radius": 160}},
+    {"tool": "pixelmon.stage.pokemon",
+     "args": {"pokemon": "charizard palette:shiny", "origin": "spawn", "pos": [4, 0, 6], "ground": true, "lookAt": [0, 2, 0]}},
+    {"tool": "pixelmon.stage.npc",
+     "args": {"npc": "pixelmon:battle/leader/gym/dragon_1", "origin": "spawn", "pos": [-3, 0, 6], "ground": true, "lookAt": [4, 0, 6]}}
   ]
 }
 ```
 
+- `"origin": "spawn"` on the staging tools matches a scene's `"origin": "spawn"`, so staged entities and camera paths
+  share coordinates.
+- Use a staged entity's `uuid` as a shot's `target` (`{"uuid": "..."}`) to orbit or follow it.
 - Hide the HUD with `mc.hud.set`; shots and recordings hide it by default. Pixelmon's party sidebar and other overlays
   are hidden with it.
 - Call `pixelmon.film.restore` when done. The `pixelmonSpawning` gamerule is saved with the world, so a world left
@@ -211,6 +230,8 @@ call them:
   start while another screen is open: check `mc.client.state` and close it with `mc.keyboard.press` `{"key": "escape"}`.
 - A sent-out Pokémon's ball flies where the player looks and can hit something in the way, such as another sent-out
   Pokémon. Check `out` in `pixelmon.party.state` rather than assuming it landed.
+- Pixelmon's client picks a Pokémon's animation from how it moves, so `animation` on `pixelmon.stage.pokemon` only
+  holds for `special` on a Pokémon standing on the ground. A frozen Pokémon placed in the air plays `fly`.
 - Only stop clients you launched. A developer may be running their own Minecraft clients next to the agent's.
 
 ## Building
